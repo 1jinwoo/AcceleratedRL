@@ -2,7 +2,7 @@
 Accelerated Reinforcement Learning via Imitation Learning
 
 ## Dependencies
-See `py37.yml` for dependencies information
+See `dl4cv.yml` for dependencies information
 
 ## Objectives
 In a sparse reward environment setting with large state and action space, it can be hard to stumble upon a favorable policy for a reinforcement learning agent. To tackle this problem, we employ imitation learning to first learn human-inspired policy to kickstart the reinforcement learning process. To demonstrate that using imitation learning shortens the training time in comparison to only using reinforcement learning, we will present two graphs showing how the reinforcement learning agent augmented with imitation learning learns much faster than the vanilla RL agent does.

@@ -11,7 +11,7 @@ try:
 except ImportError:
     MPI = None
 from train_ppo.runner import Runner
-
+import pickle
 
 def constfn(val):
     def f(_):
@@ -108,11 +108,18 @@ def learn(*, network, env, total_timesteps, eval_env = None, seed=None, nsteps=2
                     nsteps=nsteps, ent_coef=ent_coef, vf_coef=vf_coef,
                     max_grad_norm=max_grad_norm, comm=comm, mpi_rank_weight=mpi_rank_weight)
 
+    if save_interval and logger.get_dir():
+        import cloudpickle
+        base_path = os.path.dirname(os.path.abspath(__file__))
+        if not os.path.isdir(osp.join(base_path, "models")):
+            os.mkdir(osp.join(base_path, "models"))
+        with open(osp.join(base_path, "models", 'make_model.pkl'), 'wb') as fh:
+            fh.write(cloudpickle.dumps(model))
+
     if load_path is not None:
         model.load(load_path)
     # Instantiate the runner object
     runner = Runner(env=env, model=model, nsteps=nsteps, gamma=gamma, lam=lam)
-    print('runner initialized')
     if eval_env is not None:
         eval_runner = Runner(env = eval_env, model = model, nsteps = nsteps, gamma = gamma, lam= lam)
 
@@ -127,6 +134,8 @@ def learn(*, network, env, total_timesteps, eval_env = None, seed=None, nsteps=2
     tfirststart = time.perf_counter()
 
     nupdates = total_timesteps//nbatch
+
+    # performance =
     for update in range(1, nupdates+1):
         assert nbatch % nminibatches == 0
         # Start timer
@@ -140,7 +149,6 @@ def learn(*, network, env, total_timesteps, eval_env = None, seed=None, nsteps=2
         if update % log_interval == 0 and is_mpi_root: logger.info('Stepping environment...')
 
         # Get minibatch
-        print('running runner!')
         obs, returns, masks, actions, values, neglogpacs, states, epinfos = runner.run() #pylint: disable=E0632
         if eval_env is not None:
             eval_obs, eval_returns, eval_masks, eval_actions, eval_values, eval_neglogpacs, eval_states, eval_epinfos = eval_runner.run() #pylint: disable=E0632
@@ -211,11 +219,12 @@ def learn(*, network, env, total_timesteps, eval_env = None, seed=None, nsteps=2
 
             logger.dumpkvs()
         if save_interval and (update % save_interval == 0 or update == 1) and logger.get_dir() and is_mpi_root:
-            checkdir = osp.join(logger.get_dir(), 'checkpoints')
-            os.makedirs(checkdir, exist_ok=True)
-            savepath = osp.join(checkdir, '%.5i'%update)
+            model_dir = osp.join(base_path, "models")
+            os.makedirs(model_dir, exist_ok=True)
+            savepath = osp.join(model_dir, '%.5i' % update)
             print('Saving to', savepath)
             model.save(savepath)
+            print("Saved model successfully.")
 
     return model
 # Avoid division error when calculate the mean (in our case if epinfo is empty returns np.nan, not return an error)

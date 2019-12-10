@@ -16,22 +16,19 @@ class Runner(AbstractEnvRunner):
         self.lam = lam
         # Discount rate
         self.gamma = gamma
+        self.steps_elapsed = 0
 
     def run(self):
-        print('Entered run!')
         # Here, we init the lists that will contain the mb of experiences
         mb_obs, mb_rewards, mb_actions, mb_values, mb_dones, mb_neglogpacs = [],[],[],[],[],[]
         mb_states = self.states
         epinfos = []
         # For n in range number of steps
         for _ in range(self.nsteps):
+            self.steps_elapsed += 1
             # Given observations, get action value and neglopacs
             # We already have self.obs because Runner superclass run self.obs[:] = env.reset() on init
             actions, values, self.states, neglogpacs = self.model.step(self.obs, S=self.states, M=self.dones)
-
-            # render environment
-            print('im here')
-            self.env.render()
 
             mb_obs.append(self.obs.copy())
             mb_actions.append(actions)
@@ -42,6 +39,12 @@ class Runner(AbstractEnvRunner):
             # Take actions in env and look the results
             # Infos contains a ton of useful informations
             self.obs[:], rewards, self.dones, infos = self.env.step(actions)
+
+            # render environment
+            if self.steps_elapsed % 10 == 0:
+                self.env.render()
+                print('rewards: {}'.format(rewards))
+
             for info in infos:
                 maybeepinfo = info.get('episode')
                 if maybeepinfo: epinfos.append(maybeepinfo)

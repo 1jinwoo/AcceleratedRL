@@ -24,7 +24,7 @@ def main():
         env = wrap_deepmind_retro(env)
         return env
 
-    venv = SubprocVecEnv([make_env] * 8)
+    venv = SubprocVecEnv([make_env] * 1)
     ppo2.learn(
         network='cnn',
         env=venv,

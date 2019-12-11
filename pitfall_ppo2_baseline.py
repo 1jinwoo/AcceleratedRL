@@ -24,19 +24,20 @@ def main():
         env = wrap_deepmind_retro(env)
         return env
 
-    venv = SubprocVecEnv([make_env] * 1)
+    venv = SubprocVecEnv([make_env] * 8)
     ppo2.learn(
         network='cnn',
         env=venv,
-        total_timesteps=int(1e6),
+        total_timesteps=int(1e5),
         nsteps=128,
         nminibatches=4,
         lam=0.95,
         gamma=0.99,
         noptepochs=4,
-        log_interval=1,
-        ent_coef=.01,
-        lr=lambda f: f * 2.5e-4,
+        log_interval=20,
+        save_interval=5,
+        ent_coef=.02,
+        lr=lambda f: f * 3e-4,
         cliprange=0.1,
     )
 

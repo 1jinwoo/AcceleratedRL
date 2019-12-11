@@ -32,9 +32,9 @@ def main():
 
     base_dirname = os.path.join(currentdir, "results")
     #dir_name = "pitfall_ppo2_rl_baseline1"
-    dir_name = "test"
+    dir_name = "pitfall_ppo2testing_D191211_073544"
     dir_name = os.path.join(base_dirname, dir_name)
-    load_path = os.path.join(dir_name, 'models/00390')
+    load_path = os.path.join(dir_name, 'models/00781')
 
     venv = SubprocVecEnv([make_env] * 1) #Vectorized
     network = 'cnn'

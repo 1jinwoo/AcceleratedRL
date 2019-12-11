@@ -3,6 +3,7 @@ import json
 import pickle
 import numpy as np
 import matplotlib.pyplot as plt
+import argparse
 
 def addDateTime(s = ""):
     """
@@ -46,9 +47,13 @@ def running_avg(list_to_avg, avg_steps=100):
     return array_avged
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--parent_dir', default="pitfall_ppo2_rl_justin")
+    args = parser.parse_args()
+
     rl_avg_steps = 1000
     metrics_to_plot = ["reward"]
-    parent_dir = os.path.join("results", "pitfall_ppo2_rl_justin")
+    parent_dir = os.path.join("results", args.parent_dir)
     plot_dir = os.path.join(parent_dir, "plots")
     plot_dir = addDateTime(plot_dir)
 

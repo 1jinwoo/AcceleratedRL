@@ -54,10 +54,14 @@ class Runner(AbstractEnvRunner):
             # score = infos[0]['score']
             going_right = actions[:, -1]
             going_left = actions[:, -2]
+            going_up = actions[:, -4]
+            going_down = actions[:, -3]
 
             total_rewards = np.where(rewards<=0, rewards*10, rewards*100)
             total_rewards += 10 * going_right
             total_rewards -= 10 * going_left
+            total_rewards += 10 * going_up
+            total_rewards -= 10 * going_down
 
             rewards = total_rewards
 

@@ -18,7 +18,7 @@ class Runner(AbstractEnvRunner):
         self.gamma = gamma
         self.steps_elapsed = 0
         self.use_demo = use_demo
-        self.demo_total_steps = len(demos)
+        self.demo_total_steps = len(demos) if demos is not None else None
         self.demo_steps = 0
         self.mb_rewards = []
         self.demos = demos
@@ -55,11 +55,9 @@ class Runner(AbstractEnvRunner):
             going_right = actions[:, -1]
             going_left = actions[:, -2]
 
-            total_rewards = 10 * rewards if rewards <= 0 else 1000 * rewards
-            if going_right:
-                total_rewards += 10
-            if going_left:
-                total_rewards -= 10
+            total_rewards = np.where(rewards<=0, rewards*10, rewards*100)
+            total_rewards += 10 * going_right
+            total_rewards -= 10 * going_left
 
             rewards = total_rewards
 

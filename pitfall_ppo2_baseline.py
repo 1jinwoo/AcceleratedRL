@@ -55,7 +55,7 @@ def main():
     if not os.path.exists(dir_name):
         os.mkdir(dir_name)
 
-    venv = SubprocVecEnv([make_env] * 1)
+    venv = SubprocVecEnv([make_env] * 8)
     performance = ppo2.learn(
         network='cnn',
         env=venv,

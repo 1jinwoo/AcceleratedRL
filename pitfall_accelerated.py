@@ -4,6 +4,8 @@ Train an agent using Proximal Policy Optimization from OpenAI Baselines
 import retro
 import os, inspect
 import pickle
+import numpy as np
+import time
 
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)
@@ -20,7 +22,7 @@ verbose = 1
 quiet = 0
 obs_type = 'image'
 players = 1
-dir_note = 'testing'
+dir_note = '_rl_justin'
 
 def addDateTime(s = ""):
     """
@@ -45,6 +47,9 @@ def main():
         return env
 
     base_dirname = os.path.join(currentdir, "results")
+    demo_dir = os.path.join(currentdir, "human_data/demonstrations")
+
+    demo_fname = os.path.join(demo_dir, "human_demonstration_10.pkl")
 
     if not os.path.exists(base_dirname):
         os.mkdir(base_dirname)
@@ -55,11 +60,20 @@ def main():
     if not os.path.exists(dir_name):
         os.mkdir(dir_name)
 
+    with open(demo_fname, "rb") as f:
+        demos = pickle.load(f)
+
+    valid_demos = []
+    for demo in demos:
+        action, score = demo
+        valid_action = np.array(action, dtype=np.float32).reshape(1, -1)
+        valid_demos.append(valid_action)
+
     venv = SubprocVecEnv([make_env] * 1)
     performance = ppo2.learn(
         network='cnn',
         env=venv,
-        total_timesteps=int(2e5),
+        total_timesteps=int(6e3),
         nsteps=32,
         nminibatches=4,
         lam=0.95,
@@ -70,12 +84,16 @@ def main():
         ent_coef=.02,
         lr=lambda f: f * 3e-4,
         cliprange=0.2,
-        base_path=dir_name
+        base_path=dir_name,
+        use_demo=True,
+        demos=valid_demos,
+        render_env = True
     )
 
     performance_fname = os.path.join(dir_name, "performance.p")
     with open(performance_fname, "wb") as f:
         pickle.dump(performance, f)
+
 
 if __name__ == '__main__':
     main()

@@ -73,7 +73,7 @@ def main():
     performance = ppo2.learn(
         network='cnn',
         env=venv,
-        total_timesteps=int(6e3),
+        total_timesteps=int(2e5),
         nsteps=32,
         nminibatches=4,
         lam=0.95,
@@ -87,7 +87,7 @@ def main():
         base_path=dir_name,
         use_demo=True,
         demos=valid_demos,
-        render_env = True
+        render_env = False
     )
 
     performance_fname = os.path.join(dir_name, "performance.p")

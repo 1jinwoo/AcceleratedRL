@@ -56,12 +56,16 @@ class Runner(AbstractEnvRunner):
             going_left = actions[:, -2]
             going_up = actions[:, -4]
             going_down = actions[:, -3]
+            jumping = actions[:, 0]
+            jumping_down = np.logical_and(going_down, jumping)
+            just_down = np.logical_and(np.logical_not(jumping), going_down)
 
             total_rewards = np.where(rewards<=0, rewards*10, rewards*100)
             total_rewards += 10 * going_right
             total_rewards -= 10 * going_left
             total_rewards += 10 * going_up
-            total_rewards -= 10 * going_down
+            total_rewards += 5 * jumping_down
+            total_rewards -= 10 * just_down
 
             rewards = total_rewards
 

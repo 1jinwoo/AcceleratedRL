@@ -39,8 +39,8 @@ class Runner(AbstractEnvRunner):
             # Take actions in env and look the results
             # Infos contains a ton of useful informations
             self.obs[:], rewards, self.dones, infos = self.env.step(actions)
-            if self.steps_elapsed % 10 == 0:
-                self.env.render()
+            # if self.steps_elapsed % 10 == 0:
+            #    self.env.render()
             for info in infos:
                 maybeepinfo = info.get('episode')
                 if maybeepinfo: epinfos.append(maybeepinfo)

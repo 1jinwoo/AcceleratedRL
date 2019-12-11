@@ -20,7 +20,7 @@ verbose = 1
 quiet = 0
 obs_type = 'image'
 players = 1
-dir_note = '_rl_baseline'
+dir_note = '_rl_baseline1'
 
 
 def main():
@@ -28,6 +28,7 @@ def main():
         obs_type = retro.Observations.IMAGE  # retro.Observations.RAM
         env = retro.make(game=game, state=state, scenario=scenario, record=record, players=players, obs_type=obs_type)
         # env = retro.make(game=game, state=state, scenario=scenario)
+        print(retro.__path__)
         env = wrap_deepmind_retro(env)
         return env
 
@@ -36,22 +37,23 @@ def main():
     if not os.path.exists(base_dirname):
         os.mkdir(base_dirname)
     dir_name = "pitfall_ppo2_"
+    dir_name += dir_note
     dir_name = os.path.join(base_dirname, dir_name)
     if not os.path.exists(dir_name):
         os.mkdir(dir_name)
 
-    venv = SubprocVecEnv([make_env] * 8)
+    venv = SubprocVecEnv([make_env] * 1)
     performance = ppo2.learn(
         network='cnn',
         env=venv,
-        total_timesteps=int(1e5),
+        total_timesteps=int(2e5),
         nsteps=32,
         nminibatches=4,
         lam=0.95,
         gamma=0.99,
         noptepochs=16,
         log_interval=10,
-        save_interval=5,
+        save_interval=1000,
         ent_coef=.02,
         lr=lambda f: f * 3e-4,
         cliprange=0.2,
@@ -61,20 +63,6 @@ def main():
     performance_fname = os.path.join(dir_name, "performance.p")
     with open(performance_fname, "wb") as f:
         pickle.dump(performance, f)
-
-    import matplotlib.pyplot as plt
-    plt.figure()
-    plt.plot(performance["policy_loss"], label="policy_loss")
-    plt.plot(performance["value_loss"], label="value_loss")
-    plt.legend()
-    plt.savefig(os.path.join(dir_name, "loss.jpg"), dpi=300)
-    plt.close()
-    plt.figure()
-    plt.plot(performance["reward"], label="reward")
-    plt.legend()
-    plt.savefig(os.path.join(dir_name, "reward.jpg"), dpi=300)
-    plt.close('all')
-
 
 if __name__ == '__main__':
     main()

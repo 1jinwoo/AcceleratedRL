@@ -21,7 +21,7 @@ def constfn(val):
 def learn(*, network, env, total_timesteps, eval_env = None, seed=None, nsteps=2048, ent_coef=0.0, lr=3e-4,
             vf_coef=0.5,  max_grad_norm=0.5, gamma=0.99, lam=0.95,
             log_interval=10, nminibatches=4, noptepochs=4, cliprange=0.2,
-            save_interval=0, load_path=None, model_fn=None, update_fn=None, init_fn=None, mpi_rank_weight=1, comm=None, **network_kwargs):
+            save_interval=0, load_path=None, model_fn=None, update_fn=None, init_fn=None, mpi_rank_weight=1, comm=None, base_path=None, **network_kwargs):
     '''
     Learn policy using PPO algorithm (https://arxiv.org/abs/1707.06347)
 
@@ -109,12 +109,12 @@ def learn(*, network, env, total_timesteps, eval_env = None, seed=None, nsteps=2
                     max_grad_norm=max_grad_norm, comm=comm, mpi_rank_weight=mpi_rank_weight)
 
     if save_interval and logger.get_dir():
-        import cloudpickle
-        base_path = os.path.dirname(os.path.abspath(__file__))
+        if base_path is None:
+            base_path = os.path.dirname(os.path.abspath(__file__))
         if not os.path.isdir(osp.join(base_path, "models")):
             os.mkdir(osp.join(base_path, "models"))
-        with open(osp.join(base_path, "models", 'make_model.pkl'), 'wb') as fh:
-            fh.write(cloudpickle.dumps(model))
+        # with open(osp.join(base_path, "models", 'model.pkl'), 'wb') as fh:
+        #     fh.write(cloudpickle.dumps(model))
 
     if load_path is not None:
         model.load(load_path)
@@ -135,7 +135,11 @@ def learn(*, network, env, total_timesteps, eval_env = None, seed=None, nsteps=2
 
     nupdates = total_timesteps//nbatch
 
-    # performance =
+    # initialize dictionary for data saving
+    performance = {"reward": []}
+    for name in model.loss_names:
+        performance[name] = []
+
     for update in range(1, nupdates+1):
         assert nbatch % nminibatches == 0
         # Start timer
@@ -150,6 +154,10 @@ def learn(*, network, env, total_timesteps, eval_env = None, seed=None, nsteps=2
 
         # Get minibatch
         obs, returns, masks, actions, values, neglogpacs, states, epinfos = runner.run() #pylint: disable=E0632
+        rewards = runner.mb_rewards
+        # save reward data
+        performance["reward"].extend(rewards)
+
         if eval_env is not None:
             eval_obs, eval_returns, eval_masks, eval_actions, eval_values, eval_neglogpacs, eval_states, eval_epinfos = eval_runner.run() #pylint: disable=E0632
 
@@ -218,6 +226,12 @@ def learn(*, network, env, total_timesteps, eval_env = None, seed=None, nsteps=2
                 logger.logkv('loss/' + lossname, lossval)
 
             logger.dumpkvs()
+
+        # save loss data
+        for i in range(len(model.loss_names)):
+            loss_name = model.loss_names[i]
+            performance[loss_name].extend([lossvals[i]])
+
         if save_interval and (update % save_interval == 0 or update == 1) and logger.get_dir() and is_mpi_root:
             model_dir = osp.join(base_path, "models")
             os.makedirs(model_dir, exist_ok=True)
@@ -225,8 +239,11 @@ def learn(*, network, env, total_timesteps, eval_env = None, seed=None, nsteps=2
             print('Saving to', savepath)
             model.save(savepath)
             print("Saved model successfully.")
+            performance_fname = os.path.join(base_path, "performance.p")
+            with open(performance_fname, "wb") as f:
+               pickle.dump(performance, f)
 
-    return model
+    return performance
 # Avoid division error when calculate the mean (in our case if epinfo is empty returns np.nan, not return an error)
 def safemean(xs):
     return np.nan if len(xs) == 0 else np.mean(xs)

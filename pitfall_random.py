@@ -2,7 +2,7 @@ import retro
 
 game = 'Pitfall-Atari2600'
 scenario = 'scenario'
-record = '.'
+record = True
 verbose = 1
 quiet = 0
 obs_type = 'image'
@@ -32,7 +32,7 @@ try:
             ac = env.action_space.sample()
             ob, rew, done, info = env.step(ac)
             t += 1
-            if t % 10 == 0:
+            if t % 1 == 0:
                 if verbosity > 1:
                     infostr = ''
                     if info:

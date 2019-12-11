@@ -4,13 +4,26 @@ import pickle
 import numpy as np
 import matplotlib.pyplot as plt
 
+def addDateTime(s = ""):
+    """
+    Adds the current date and time at the end of a string.
+    Inputs:
+        s -> string
+    Output:
+        S = s_Dyymmdd_HHMM
+    """
+    import datetime
+    date = str(datetime.datetime.now())
+    date = date[2:4] + date[5:7] + date[8:10] + '_' + date[11:13] + date[14:16] + date[17:19]
+    return s + '_D' + date
+
 def append_or_create_list_for_key(dict, key, ele):
     if key in dict:
         dict[key].append(ele)
     else:
         dict[key] = [ele]
 
-def smooth(scalars, weight=0.9):  # Weight between 0 and 1
+def smooth(scalars, weight=0.5):  # Weight between 0 and 1
     last = scalars[0]  # First value in the plot (first timestep)
     smoothed = list()
     for point in scalars:
@@ -33,12 +46,14 @@ def running_avg(list_to_avg, avg_steps=100):
     return array_avged
 
 if __name__ == "__main__":
-    rl_avg_steps = 100
+    rl_avg_steps = 1000
     metrics_to_plot = ["reward"]
-    parent_dir = os.path.join("results", "pitfall_ppo2_rl_baseline1")
+    parent_dir = os.path.join("results", "pitfall_ppo2_rl_justin")
+    plot_dir = os.path.join(parent_dir, "plots")
+    plot_dir = addDateTime(plot_dir)
 
-    if not os.path.exists("plots"):
-        os.mkdir("plots")
+    if not os.path.exists(plot_dir):
+        os.mkdir(plot_dir)
 
     performance_dict = {}
     dirname = parent_dir
@@ -68,5 +83,5 @@ if __name__ == "__main__":
             plt.xlim((0, len(val_mean)))
             plt.minorticks_on()
             plt.grid(True, which="both", alpha=.2)
-            plt.savefig(os.path.join("plots", "{}.png".format(metric)))
+            plt.savefig(os.path.join(plot_dir, "{}.png".format(metric)))
             plt.show()

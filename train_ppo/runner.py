@@ -10,14 +10,19 @@ class Runner(AbstractEnvRunner):
     run():
     - Make a mini batch
     """
-    def __init__(self, *, env, model, nsteps, gamma, lam):
+    def __init__(self, *, env, model, nsteps, gamma, lam, use_demo=False, demos=None, render_env=False):
         super().__init__(env=env, model=model, nsteps=nsteps)
         # Lambda used in GAE (General Advantage Estimation)
         self.lam = lam
         # Discount rate
         self.gamma = gamma
         self.steps_elapsed = 0
+        self.use_demo = use_demo
+        self.demo_total_steps = len(demos)
+        self.demo_steps = 0
         self.mb_rewards = []
+        self.demos = demos
+        self.render_env = render_env
 
     def run(self):
         # Here, we init the lists that will contain the mb of experiences
@@ -26,7 +31,6 @@ class Runner(AbstractEnvRunner):
         epinfos = []
         # For n in range number of steps
         for _ in range(self.nsteps):
-            self.steps_elapsed += 1
             # Given observations, get action value and neglopacs
             # We already have self.obs because Runner superclass run self.obs[:] = env.reset() on init
             actions, values, self.states, neglogpacs = self.model.step(self.obs, S=self.states, M=self.dones)
@@ -38,13 +42,38 @@ class Runner(AbstractEnvRunner):
 
             # Take actions in env and look the results
             # Infos contains a ton of useful informations
+            if self.use_demo:
+                actions = self.demos[self.demo_steps]
+                self.demo_steps += 1
+                if self.demo_steps >= self.demo_total_steps:
+                    self.demo_steps = 0
             self.obs[:], rewards, self.dones, infos = self.env.step(actions)
-            # if self.steps_elapsed % 10 == 0:
-            #    self.env.render()
+
+            # reward shaping
+            # lives = infos[0]['lives']
+            # score = infos[0]['score']
+            going_right = actions[:, -1]
+            going_left = actions[:, -2]
+
+            total_rewards = 10 * rewards if rewards <= 0 else 1000 * rewards
+            if going_right:
+                total_rewards += 10
+            if going_left:
+                total_rewards -= 10
+
+            rewards = total_rewards
+
+
+
+
+            if self.render_env:
+                if self.steps_elapsed % 1 == 0:
+                    self.env.render()
             for info in infos:
                 maybeepinfo = info.get('episode')
                 if maybeepinfo: epinfos.append(maybeepinfo)
             mb_rewards.append(rewards)
+            self.steps_elapsed += 1
         # batch of steps to batch of rollouts
         mb_obs = np.asarray(mb_obs, dtype=self.obs.dtype)
         mb_rewards = np.asarray(mb_rewards, dtype=np.float32)

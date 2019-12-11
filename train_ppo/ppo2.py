@@ -21,7 +21,8 @@ def constfn(val):
 def learn(*, network, env, total_timesteps, eval_env = None, seed=None, nsteps=2048, ent_coef=0.0, lr=3e-4,
             vf_coef=0.5,  max_grad_norm=0.5, gamma=0.99, lam=0.95,
             log_interval=10, nminibatches=4, noptepochs=4, cliprange=0.2,
-            save_interval=0, load_path=None, model_fn=None, update_fn=None, init_fn=None, mpi_rank_weight=1, comm=None, base_path=None, **network_kwargs):
+            save_interval=0, load_path=None, model_fn=None, update_fn=None, use_demo=False, demos=None, render_env=False,
+            init_fn=None, mpi_rank_weight=1, comm=None, base_path=None, **network_kwargs):
     '''
     Learn policy using PPO algorithm (https://arxiv.org/abs/1707.06347)
 
@@ -119,7 +120,7 @@ def learn(*, network, env, total_timesteps, eval_env = None, seed=None, nsteps=2
     if load_path is not None:
         model.load(load_path)
     # Instantiate the runner object
-    runner = Runner(env=env, model=model, nsteps=nsteps, gamma=gamma, lam=lam)
+    runner = Runner(env=env, model=model, nsteps=nsteps, gamma=gamma, lam=lam, use_demo=use_demo, demos=demos, render_env=render_env)
     if eval_env is not None:
         eval_runner = Runner(env = eval_env, model = model, nsteps = nsteps, gamma = gamma, lam= lam)
 
@@ -242,6 +243,16 @@ def learn(*, network, env, total_timesteps, eval_env = None, seed=None, nsteps=2
             performance_fname = os.path.join(base_path, "performance.p")
             with open(performance_fname, "wb") as f:
                pickle.dump(performance, f)
+
+    model_dir = osp.join(base_path, "models")
+    os.makedirs(model_dir, exist_ok=True)
+    savepath = osp.join(model_dir, '%.5i' % update)
+    print('Saving to', savepath)
+    model.save(savepath)
+    print("Saved model successfully.")
+    performance_fname = os.path.join(base_path, "performance.p")
+    with open(performance_fname, "wb") as f:
+        pickle.dump(performance, f)
 
     return performance
 # Avoid division error when calculate the mean (in our case if epinfo is empty returns np.nan, not return an error)
